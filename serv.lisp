@@ -1,16 +1,18 @@
 
+(ql:quickload :cl-who)
+(require :sb-bsd-sockets)
+(require :sb-concurrency)
+
 #+nil
 (eval-when (:compile-toplevel :load-toplevel)
-  (ql:quickload :cl-who)
-  (require :sb-bsd-sockets)
-  (require :sb-concurrency)
   #+nil (require :cl-who))
 
 ;; https://sourceforge.net/p/sbcl/mailman/message/3493412/
 
 (defpackage :serv
-  (:use :cl :sb-bsd-sockets :cl-who))
+  (:use :cl :sb-bsd-sockets))
 (in-package :serv)
+(use-package :cl-who)
 
 (declaim (optimize (speed 0) (safety 3) (debug 3)))
 
@@ -18,35 +20,35 @@
 <script type='text/javascript'>
 <!--
 function httpSuccess(r){
-  try{
-    return (r.status>=200 && r.status<300) || // anything in 200 range is good
-            r.status==304; // from browser cache
-  } catch(e){}
-  return false;
+    try{
+	return (r.status>=200 && r.status<300) || // anything in 200 range is good
+        r.status==304; // from browser cache
+    } catch(e){}
+    return false;
 }
 window.onload=function(){
-var source = new EventSource('event');
-source.addEventListener('message',function(e){
-//  console.log(e.data);
-  var s=document.getElementById('feed');
-  s.innerHTML=e.data;
-    },false);
-var c=new XMLHttpRequest();
-c.onreadystatechange=function(){
-  if(c.readyState==4){
-   if(httpSuccess(c)){
-    var s=document.getElementById('feed');
-    s.innerHTML=c.responseText;
-    //draw();
-   }
-   c=null; 
-  }
-}
-c.open('GET','test.txt');
-c.send('127.0.0.1');
+    var source = new EventSource('event');
+    source.addEventListener('message',function(e){
+	console.log(e.data);
+	var s=document.getElementById('feed');
+	setTimeout( function(){ s.innerHTML=e.data; }, 300);
+    },false);  
 }
 //-->
 </script>")
+
+;; var c=new XMLHttpRequest();
+;;     c.onreadystatechange=function(){
+;; 	if(c.readyState==4){
+;; 	    if(httpSuccess(c)){
+;; 		var s=document.getElementById('feed');
+;;                 setTimeout(function(){s.innerHTML=c.responseText;},300);
+;; 	    }
+;; 	    c=null; 
+;; 	}
+;;     }
+;;     c.open('GET','test.txt');
+;;     c.send('127.0.0.1');
 
 (defun init-serv ()
   (let ((s (make-instance 'inet-socket :type :stream :protocol :tcp)))
@@ -112,20 +114,19 @@ c.send('127.0.0.1');
 ; => "<table><tr><td>3</td><td>3</td><td>3</td><td>3</td><td>3</td></tr><tr><td>3</td><td>3</td><td>3</td><td>3</td><td>3</td></tr></table>" [3 times]
 
 #+nil
-(dotimes (i 5)
+(dotimes (i 10)
  (sleep .1)
  (sb-concurrency:send-message
   *pusher-mb*
   (with-output-to-string (sm)
     (with-html-output (sm)
-      (:a-scene
-       (:a-sphere :position (format nil "~{~a~^ ~}" '(0 1.25 -5))
-		  :radius (format nil "~a" 1.25) :color "#EF2D5E")
-       (:a-plane :position (format nil "~{~a~^ ~}" '(0 0 -4))
-		 :rotation (format nil "~{~a~^ ~}" '(-90 0 0))
-		 :width "4"
-		 :height "4"
-		 :color "#7BC8A4"))))))
+      (:a-sphere :position (format nil "~{~a~^ ~}" (list i 1.25 -5))
+		 :radius (format nil "~a" 1.25) :color "#EF2D5E")
+      (:a-plane :position (format nil "~{~a~^ ~}" '(0 0 -4))
+		:rotation (format nil "~{~a~^ ~}" '(-90 0 0))
+		:width "4"
+		:height "4"
+		:color "#7BC8A4")))))
 
 (with-output-to-string (sm)
      (with-html-output (sm)
@@ -167,7 +168,16 @@ c.send('127.0.0.1');
 	     (let ((msg (sb-concurrency:receive-message *pusher-mb* :timeout 1)))
 	       (if msg
 		   (setf old-msg msg)
-		   "" #+nl (format nil "<b>no update</b>~a" old-msg)))
+		   (with-output-to-string (sm)
+		     (with-html-output (sm)
+		       (:a-sphere :position (format nil "~{~a~^ ~}" '(0 1.25 -5))
+				  :radius (format nil "~a" 1.25) :color "#EF2D5E")
+		       (:a-plane :position (format nil "~{~a~^ ~}" '(0 0 -4))
+				 :rotation (format nil "~{~a~^ ~}" '(-90 0 0))
+				 :width "4"
+				 :height "4"
+				 :color "#7BC8A4")))
+		   #+nil (format nil "<b>no update</b>~a" old-msg)))
 	     #\return #\linefeed #\return #\linefeed))))
 
 
@@ -205,12 +215,17 @@ c.send('127.0.0.1');
 		     (:head (:title "hello")
 			    (:script :src "https://aframe.io/releases/0.6.0/aframe.min.js"))
 		     (:body
-		      (:div :id "feed"
-			    (str (format nil "~a" (get-internal-real-time))))
-		      )
+		      (:a-scene :id "feed"
+				(:a-sphere :position (format nil "~{~a~^ ~}" '(0 1.25 -5))
+					   :radius (format nil "~a" 1.25) :color "#EF2D5E")
+				(:a-plane :position (format nil "~{~a~^ ~}" '(0 0 -4))
+					  :rotation (format nil "~{~a~^ ~}" '(-90 0 0))
+					  :width "4"
+					  :height "4"
+					  :color "#7BC8A4")))
 		     (str cont))))
 	     (close sm)) 
-	    ((string= r "/test.txt")
+	    #+nil ((string= r "/test.txt")
 	     (format sm "HTTP/1.1 200 OK~%Content-type: text/html~%~%")
 	     (format sm "<b>~a</b>" (get-internal-real-time))
 	     (close sm))
