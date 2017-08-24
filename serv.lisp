@@ -30,8 +30,10 @@ window.onload=function(){
     var source = new EventSource('event');
     source.addEventListener('message',function(e){
 	console.log(e.data);
-	var s=document.getElementById('feed');
-	setTimeout( function(){ s.innerHTML=e.data; }, 300);
+        sphere = document.querySelector('a-sphere');
+        sphere.parentNode.removeChild(sphere);
+	//var s=document.getElementById('feed');
+        //s.innerHTML=e.data;
     },false);  
 }
 //-->
@@ -114,8 +116,8 @@ window.onload=function(){
 ; => "<table><tr><td>3</td><td>3</td><td>3</td><td>3</td><td>3</td></tr><tr><td>3</td><td>3</td><td>3</td><td>3</td><td>3</td></tr></table>" [3 times]
 
 #+nil
-(dotimes (i 10)
- (sleep .1)
+(dotimes (i 1)
+
  (sb-concurrency:send-message
   *pusher-mb*
   (with-output-to-string (sm)
@@ -127,21 +129,6 @@ window.onload=function(){
 		:width "4"
 		:height "4"
 		:color "#7BC8A4")))))
-
-(with-output-to-string (sm)
-     (with-html-output (sm)
-       (:div :id "feed"
-
-	     
-	     (:a-scene
-	      (:a-sphere :position (format nil "~{~a~^ ~}" '(0 1.25 -5))
-			 :radius (format nil "~a" 1.25) :color "#EF2D5E")
-	      (:a-plane :position (format nil "~{~a~^ ~}" '(0 0 -4))
-			:rotation (format nil "~{~a~^ ~}" '(-90 0 0))
-			:width "4"
-			:height "4"
-			:color "#7BC8A4")))
-       ))
 
 #+nil
 (dotimes (k 10)
@@ -165,7 +152,8 @@ window.onload=function(){
  (defun pusher-kernel (sm)
    (when *pusher-mb*
      (format sm "data: ~a~C~C~C~C"
-	     (let ((msg (sb-concurrency:receive-message *pusher-mb* :timeout 1)))
+	     (let ((msg (sb-concurrency:receive-message *pusher-mb* ;:timeout 1
+							)))
 	       (if msg
 		   (setf old-msg msg)
 		   (with-output-to-string (sm)
@@ -184,7 +172,8 @@ window.onload=function(){
 (defun pusher (sm)
   (format sm "HTTP/1.1 200 OK~%Content-type: text/event-stream~%~%")
   (loop for i below 10000 do
-       (pusher-kernel sm))
+       (pusher-kernel sm)
+       )
   (close sm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -215,14 +204,14 @@ window.onload=function(){
 		     (:head (:title "hello")
 			    (:script :src "https://aframe.io/releases/0.6.0/aframe.min.js"))
 		     (:body
-		      (:a-scene :id "feed"
-				(:a-sphere :position (format nil "~{~a~^ ~}" '(0 1.25 -5))
-					   :radius (format nil "~a" 1.25) :color "#EF2D5E")
-				(:a-plane :position (format nil "~{~a~^ ~}" '(0 0 -4))
-					  :rotation (format nil "~{~a~^ ~}" '(-90 0 0))
-					  :width "4"
-					  :height "4"
-					  :color "#7BC8A4")))
+		      (:a-scene  :id "feed"
+		       (:a-sphere :position (format nil "~{~a~^ ~}" '(0 1.25 -5))
+				  :radius (format nil "~a" 1.25) :color "#EF2D5E")
+		       (:a-plane :position (format nil "~{~a~^ ~}" '(0 0 -4))
+				 :rotation (format nil "~{~a~^ ~}" '(-90 0 0))
+				 :width "4"
+				 :height "4"
+				 :color "#7BC8A4")))
 		     (str cont))))
 	     (close sm)) 
 	    #+nil ((string= r "/test.txt")
