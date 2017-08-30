@@ -8,7 +8,9 @@
   #+nil (require :cl-who))
 
 ;; https://sourceforge.net/p/sbcl/mailman/message/3493412/
+;; intro to vue with aframe http://blog.diepartments.de/webvr-webgl-vue-js-2-0-and-aframe-js-a-sweet-couple/
 
+;; intro to vue https://vuejs.org/v2/guide/
 (defpackage :serv
   (:use :cl :sb-bsd-sockets))
 (in-package :serv)
