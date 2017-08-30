@@ -31,16 +31,16 @@
     (ps-html
      ((:a :href ,(format nil "~afoobar" 3)) "blorg"))))
 
-(ps ((@ Vue component) "simple-scene"
-		     (create data (lambda () (return (create data null)))
-			     template (who-ps-html
-				       ((:a-sphere :position (ps-inline (format nil "~{~a~^ ~}" '(0 1.25 -5)))
-						   :radius (ps-inline (format nil "~a" 1.25)) :color "#EF2D5E")
-					(:a-plane :position (ps-inline (format nil "~{~a~^ ~}" '(0 0 -4)))
-						  :rotation (ps-inline (format nil "~{~a~^ ~}" '(-90 0 0)))
-						  :width "4"
-						  :height "4"
-						  :color "#7BC8A4"))))))
+(eval `(ps ((@ Vue component) "simple-scene"
+	    (create data (lambda () (return (create data null)))
+		    template (who-ps-html
+			      (:a-sphere :position ,(format nil "~{~a~^ ~}" '(0 1.25 -5))
+					 :radius ,(format nil "~a" 1.25) :color "#EF2D5E")
+			      (:a-plane :position ,(format nil "~{~a~^ ~}" '(0 0 -4))
+					:rotation ,(format nil "~{~a~^ ~}" '(-90 0 0))
+					:width "4"
+					:height "4"
+					:color "#7BC8A4"))))))
 
 ;; Vue.component('simple-scene', {  
 ;;     data: function () {
