@@ -19,19 +19,8 @@
 
 (declaim (optimize (speed 0) (safety 3) (debug 3)))
 
-(ps (ps-html
-     (:a-sphere :position ((format nil "~{~a~^ ~}" '(0 1.25 -5)))
-		:radius (format nil "~a" 1.25) :color "#EF2D5E")
-     ))
-
-(ps (who-ps-html (ps-inline* (lisp (+ 3 2)))))
-
-(ps
-  (ps-html
-   ((:a :href (ps-inline (lisp (format nil "~afoobar" 3)))) "blorg")))
-
 (eval `(ps (progn
-	     ((@ Vue component) "simple-scene"
+	     ((@ -Vue component) "simple-scene"
 	     (create data (lambda () (return (create data null)))
 		     template (who-ps-html
 			       (:a-sphere :position ,(format nil "~{~a~^ ~}" '(0 1.25 -5))
@@ -41,10 +30,24 @@
 					 :width "4"
 					 :height "4"
 					 :color "#7BC8A4"))))
-	     (new (Vue (create el "#example"))))))
+	     (new (-Vue (create el "#example"))))))
 
 
-
+(eval `(ps (defun http-success (r) (try
+				    (return (or (and (<= 200 r.status)
+						     (< r.status 300))
+						(== 304 r.status)))
+				    (:catch (e) (return false))))
+	   (setf window.onload
+		 (lambda ()
+		   (let ((source (new (-event-source "event"))))
+		     (source.add-event-listener
+		      "message"
+		      (lambda (e)
+			;(console.log e.data)
+			(let ((s (document.get-element-by-id "feed")))
+			  (setf s.inner-h-t-m-l e.data)))
+		      false))))))
 
 
 (defparameter cont "
