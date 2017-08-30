@@ -24,58 +24,25 @@
 		:radius (format nil "~a" 1.25) :color "#EF2D5E")
      ))
 
-(ps )
+(ps (who-ps-html (ps-inline* (lisp (+ 3 2)))))
 
-(eval
- `(ps
-    (ps-html
-     ((:a :href ,(format nil "~afoobar" 3)) "blorg"))))
+(ps
+  (ps-html
+   ((:a :href (ps-inline (lisp (format nil "~afoobar" 3)))) "blorg")))
 
-(eval `(ps ((@ Vue component) "simple-scene"
-	    (create data (lambda () (return (create data null)))
-		    template (who-ps-html
-			      (:a-sphere :position ,(format nil "~{~a~^ ~}" '(0 1.25 -5))
-					 :radius ,(format nil "~a" 1.25) :color "#EF2D5E")
-			      (:a-plane :position ,(format nil "~{~a~^ ~}" '(0 0 -4))
-					:rotation ,(format nil "~{~a~^ ~}" '(-90 0 0))
-					:width "4"
-					:height "4"
-					:color "#7BC8A4"))))))
+(eval `(ps (progn
+	     ((@ Vue component) "simple-scene"
+	     (create data (lambda () (return (create data null)))
+		     template (who-ps-html
+			       (:a-sphere :position ,(format nil "~{~a~^ ~}" '(0 1.25 -5))
+					  :radius ,(format nil "~a" 1.25) :color "#EF2D5E")
+			       (:a-plane :position ,(format nil "~{~a~^ ~}" '(0 0 -4))
+					 :rotation ,(format nil "~{~a~^ ~}" '(-90 0 0))
+					 :width "4"
+					 :height "4"
+					 :color "#7BC8A4"))))
+	     (new (Vue (create el "#example"))))))
 
-;; Vue.component('simple-scene', {  
-;;     data: function () {
-;;         return {
-;;             data: null
-;;         }
-;;     }
-;;     template: 
-;;     `
-;;     <a-scene>
-;;         <a-entity id="box" 
-;;                   geometry="primitive: box" 
-;;                   position="1 1 1" 
-;;                   scale="1 1 1" 
-;;                   material="color: red">
-;;         </a-entity>
-;;         <a-entity id="box" 
-;;                   geometry="primitive: box" 
-;;                   position="2 2 1" 
-;;                   scale="2 2 2" 
-;;                   material="color: green">
-;;         </a-entity>    
-;;         <a-entity id="box" 
-;;                   geometry="primitive: box" 
-;;                   position="3 3 1" 
-;;                   scale="3 3 3" 
-;;                   material="color: blue">
-;;         </a-entity>
-;;     </a-scene>  
-;;     `
-;; })
-
-;; new Vue({  
-;;   el: '#example'
-;; })
 
 
 
