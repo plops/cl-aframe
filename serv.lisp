@@ -8,10 +8,15 @@
 (eval-when (:compile-toplevel :load-toplevel)
   #+nil (require :cl-who))
 
+;; socket handling in sbcl:
 ;; https://sourceforge.net/p/sbcl/mailman/message/3493412/
-;; intro to vue with aframe http://blog.diepartments.de/webvr-webgl-vue-js-2-0-and-aframe-js-a-sweet-couple/
 
-;; intro to vue https://vuejs.org/v2/guide/
+;; intro to vue with aframe:
+;; http://blog.diepartments.de/webvr-webgl-vue-js-2-0-and-aframe-js-a-sweet-couple/
+
+;; intro to vue:
+;; https://vuejs.org/v2/guide/
+
 (defpackage :serv
   (:use :cl :sb-bsd-sockets :ps))
 (in-package :serv)
@@ -33,23 +38,35 @@
 	     (new (-Vue (create el "#example"))))))
 
 
-(eval `(ps (defun http-success (r) (try
-				    (return (or (and (<= 200 r.status)
-						     (< r.status 300))
-						(== 304 r.status)))
-				    (:catch (e) (return false))))
-	   (setf window.onload
-		 (lambda ()
-		   (let ((source (new (-event-source "event"))))
-		     (source.add-event-listener
-		      "message"
-		      (lambda (e)
-			;(console.log e.data)
-			(let ((s (document.get-element-by-id "feed")))
-			  (setf s.inner-h-t-m-l e.data)))
-		      false))))))
+(with-output-to-string (sm)
+		     (with-html-output (sm)
+		       (:div :id "example" (:simple-scene))))
+
+(defparameter cont
+  (format nil "
+<script type='text/javascript'>
+<!--
+~a
+//-->
+</script>"
+	  (eval `(ps (defun http-success (r) (try
+					      (return (or (and (<= 200 r.status)
+							       (< r.status 300))
+							  (== 304 r.status)))
+					      (:catch (e) (return false))))
+		     (setf window.onload
+			   (lambda ()
+			     (let ((source (new (-event-source "event"))))
+			       (source.add-event-listener
+				"message"
+				(lambda (e)
+					;(console.log e.data)
+				  (let ((s (document.get-element-by-id "feed")))
+				    (setf s.inner-h-t-m-l e.data)))
+				false))))))))
 
 
+#+nil
 (defparameter cont "
 <script type='text/javascript'>
 <!--
