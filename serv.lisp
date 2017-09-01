@@ -1,5 +1,6 @@
 
 (ql:quickload :cl-who)
+(ql:quickload :cl-json)
 (ql:quickload :parenscript)
 (require :sb-bsd-sockets)
 (require :sb-concurrency)
@@ -17,6 +18,9 @@
 ;; intro to vue:
 ;; https://vuejs.org/v2/guide/
 
+;; vue with data server sent data source 
+;; https://chrisblackwell.me/server-sent-events-using-laravel-vue/
+
 (defpackage :serv
   (:use :cl :sb-bsd-sockets :ps))
 (in-package :serv)
@@ -25,45 +29,57 @@
 (declaim (optimize (speed 0) (safety 3) (debug 3)))
 
 
-
 (defparameter cont
   (with-output-to-string (sm)
-  (with-html-output (sm)
-    (htm (:html
-	  (:head (:link :rel "icon" :href "data:;base64,iVBORw0KGgo=")
-		 (:title "hello vue and aframe")
-		 (:script :src "https://aframe.io/releases/0.6.0/aframe.min.js")
-		 (:script :src "https://unpkg.com/vue")
-		 )
-	  (:body
-	   
-	   #+nil (:div
-	    (:div :id "app"
-		  (str "{{ message }}"))
-	    (:script :type "text/javascript" 
-	     (str (format nil "~%//<![CDATA[~%"))
-	     (str (ps (let ((app (new (-Vue (create :el "#app"
-						    :data (create :message "Hello Vue!")))))))))
-	     (str (format nil "~%//]]>~%"))))
-
-	   (:div
-	    (:div :id "example" (:simple-scene))
-	    (:script :type "text/javascript"
-			  (str (format nil "~%//<![CDATA[~%"))
-			  (str (ps (progn
-				     ((@ -Vue component) "simple-scene"
-				      (create data (lambda () (return (create data null)))
-					      template (who-ps-html
-							(:a-scene
-							 (:a-sphere :position "0 1.25 -5" #+nil (lisp (format nil "~{~a~^ ~}" '(0 1.25 -5)))
-								    :radius "1.25" #+nil (lisp (format nil "~a" 1.25)) :color "#0F2D5E")
-							 (:a-plane :position "0 0 -4" #+nil (lisp (format nil "~{~a~^ ~}" '(0 0 -4)))
-								   :rotation "-90 0 0"  #+nil (lisp (format nil "~{~a~^ ~}" '(-90 0 0)))
-								   :width "4"
-								   :height "4"
-								   :color "#0BC8A4")))))
-				     (new (-Vue (create el "#example"))))))
-			  (str (format nil "~%//]]>~%"))))))))))
+    (with-html-output (sm)
+      (htm (:html
+	    (:head (:link :rel "icon" :href "data:;base64,iVBORw0KGgo=")
+		   (:title "hello vue and aframe")
+		   (:script :src "https://aframe.io/releases/0.6.0/aframe.min.js")
+		   (:script :src "https://unpkg.com/vue"))
+	    (:body
+	     (:div :id "example" (:simple-scene))
+	     (:script :type "text/javascript"
+		      (str (format nil "~%//<![CDATA[~%"))
+		      (str (ps (progn
+				 
+				 ((@ -Vue component) "simple-scene"
+				  (create data (lambda ()
+						 ;; data must be a function
+						 ;; https://vuejs.org/v2/guide/components.html
+						 (return (create data null)))
+					  created (lambda ()
+						    ;; this code runs after instance is created
+						    (this.setup-stream))
+					  methods (create
+						   :setup-stream (lambda ()
+								  ;; connect to event stream of the server
+								  ;; if the server sends a message, parse it as json and store in the instances data field
+								  (let ((es (new (-event-source "./event"))))
+								    (es.add-event-listener "message"
+											   (lambda (event)
+											     (setf this.data (-J-S-O-N.parse event.data))
+											     null)
+											   false)
+								    (es.add-event-listener "error"
+											   (lambda (event)
+											     (if (== -event-source.-C-L-O-S-E-D event.ready-state)
+												 (console.log "event was closed"))
+											     null)
+											   false))))
+					  template (who-ps-html
+						    (:a-scene
+						     (:template :v-for "item in data"
+								"v-bind:id" "item.id")
+						     (:a-sphere :position "0 1.25 -5" #+nil (lisp (format nil "~{~a~^ ~}" '(0 1.25 -5)))
+								:radius "1.25" #+nil (lisp (format nil "~a" 1.25)) :color "#0F2D5E")
+						     (:a-plane :position "0 0 -4" #+nil (lisp (format nil "~{~a~^ ~}" '(0 0 -4)))
+							       :rotation "-90 0 0"  #+nil (lisp (format nil "~{~a~^ ~}" '(-90 0 0)))
+							       :width "4"
+							       :height "4"
+							       :color "#0BC8A4")))))
+				 (new (-Vue (create el "#example"))))))
+		      (str (format nil "~%//]]>~%")))))))))
 
 #+nil
 (format nil "~a" cont)
@@ -156,15 +172,29 @@
 	     (with-html-output (sm)
 	       (htm (str cont)
 		    #+nil(:html
-			(:head (:title "hello")
-			       (:script :src "https://aframe.io/releases/0.6.0/aframe.min.js"))
-			(:body
-			 )
-			(str cont))))
+			  (:head (:title "hello")
+				 (:script :src "https://aframe.io/releases/0.6.0/aframe.min.js"))
+			  (:body
+			   )
+			  (str cont))))
 	     (close sm)) 
 	    #+nil ((string= r "/test.txt")
-	     (format sm "HTTP/1.1 200 OK~%Content-type: text/html~%~%")
-	     (format sm "<b>~a</b>" (get-internal-real-time))
+		   (format sm "HTTP/1.1 200 OK~%Content-type: text/html~%~%")
+		   (format sm "<b>~a</b>" (get-internal-real-time))
+		   (close sm))
+	    #+nil ((string= r "/data.json")
+	     (format sm "HTTP/1.1 200 OK~%Content-type: application/json~%~%")
+	     (json:encode-json '#(((id . 1)
+				   (position . "1 1 1")
+				   (material . "color: red")
+				   (scale . "1 1 1")
+				   (geometry . "primitive: box"))
+				  ((id . 2)
+				   (position . "2 2 1")
+				   (material . "color: green")
+				   (scale . "2 2 2")
+				   (geometry . "primitive: box")))
+			       sm)
 	     (close sm))
 	    ((string= r "/event")
 	     (sb-thread:make-thread 
