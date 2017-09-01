@@ -34,33 +34,36 @@
 		 (:title "hello vue and aframe")
 		 (:script :src "https://aframe.io/releases/0.6.0/aframe.min.js")
 		 (:script :src "https://unpkg.com/vue")
-		 #+nil(:script :type "text/javascript"
+		 )
+	  (:body
+	   
+	   #+nil (:div
+	    (:div :id "app"
+		  (str "{{ message }}"))
+	    (:script :type "text/javascript" 
+	     (str (format nil "~%//<![CDATA[~%"))
+	     (str (ps (let ((app (new (-Vue (create :el "#app"
+						    :data (create :message "Hello Vue!")))))))))
+	     (str (format nil "~%//]]>~%"))))
+
+	   (:div
+	    (:div :id "example" (:simple-scene))
+	    (:script :type "text/javascript"
 			  (str (format nil "~%//<![CDATA[~%"))
 			  (str (ps (progn
 				     ((@ -Vue component) "simple-scene"
 				      (create data (lambda () (return (create data null)))
 					      template (who-ps-html
-							(:a-sphere :position "0 1.25 -5" #+nil (lisp (format nil "~{~a~^ ~}" '(0 1.25 -5)))
-								   :radius "1.25" #+nil (lisp (format nil "~a" 1.25)) :color "#0F2D5E")
-							(:a-plane :position "0 0 -4" #+nil (lisp (format nil "~{~a~^ ~}" '(0 0 -4)))
-								  :rotation "-90 0 0"  #+nil (lisp (format nil "~{~a~^ ~}" '(-90 0 0)))
-								  :width "4"
-								  :height "4"
-								  :color "#0BC8A4"))))
+							(:a-scene
+							 (:a-sphere :position "0 1.25 -5" #+nil (lisp (format nil "~{~a~^ ~}" '(0 1.25 -5)))
+								    :radius "1.25" #+nil (lisp (format nil "~a" 1.25)) :color "#0F2D5E")
+							 (:a-plane :position "0 0 -4" #+nil (lisp (format nil "~{~a~^ ~}" '(0 0 -4)))
+								   :rotation "-90 0 0"  #+nil (lisp (format nil "~{~a~^ ~}" '(-90 0 0)))
+								   :width "4"
+								   :height "4"
+								   :color "#0BC8A4")))))
 				     (new (-Vue (create el "#example"))))))
-			  (str (format nil "~%//]]>~%"))))
-	  (:body
-	   
-	   (:div
-	    (:div :id "app"
-		  (str "{{ message }}"))
-	    (:script 
-	     (str (format nil "~%//<![CDATA[~%"))
-	     (str (ps (let ((app (new (-Vue (create :el "#app"
-						    :data (create :message "Hello Vue!")))))))))
-	     (str (format nil "~%//]]>~%"))))
-	   #+nil
-	   (:div :id "example" (:simple-scene))))))))
+			  (str (format nil "~%//]]>~%"))))))))))
 
 #+nil
 (format nil "~a" cont)
