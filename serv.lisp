@@ -30,10 +30,11 @@
   (with-output-to-string (sm)
   (with-html-output (sm)
     (htm (:html
-	  (:head (:title "hello vue and aframe")
+	  (:head (:link :rel "icon" :href "data:;base64,iVBORw0KGgo=")
+		 (:title "hello vue and aframe")
 		 (:script :src "https://aframe.io/releases/0.6.0/aframe.min.js")
 		 (:script :src "https://unpkg.com/vue")
-		 (:script :type "text/javascript"
+		 #+nil(:script :type "text/javascript"
 			  (str (format nil "~%//<![CDATA[~%"))
 			  (str (ps (progn
 				     ((@ -Vue component) "simple-scene"
@@ -49,13 +50,15 @@
 				     (new (-Vue (create el "#example"))))))
 			  (str (format nil "~%//]]>~%"))))
 	  (:body
-	   (:div :id "app"
-		 (str "{{ message }}"))
-	   (:script 
-	    (str (format nil "~%//<![CDATA[~%"))
-	    (str (ps (let ((app (new (-Vue (create :el "#app"
-						   :data (create :message "Hello Vue!")))))))))
-	    (str (format nil "~%//]]>~%")))
+	   
+	   (:div
+	    (:div :id "app"
+		  (str "{{ message }}"))
+	    (:script 
+	     (str (format nil "~%//<![CDATA[~%"))
+	     (str (ps (let ((app (new (-Vue (create :el "#app"
+						    :data (create :message "Hello Vue!")))))))))
+	     (str (format nil "~%//]]>~%"))))
 	   #+nil
 	   (:div :id "example" (:simple-scene))))))))
 
