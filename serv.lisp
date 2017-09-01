@@ -26,37 +26,11 @@
 
 
 
-
-(with-output-to-string (sm)
-  (with-html-output (sm)
-    (htm (:html
-	  (:head (:title "hello")
-
-		 (:script :src "https://aframe.io/releases/0.6.0/aframe.min.js")
-		 (:script :src "https://unpkg.com/vue")
-		 (:script (eval `(ps (progn
-				       ((@ -Vue component) "simple-scene"
-					(create data (lambda () (return (create data null)))
-						template (who-ps-html
-							  (:a-sphere :position ,(format nil "~{~a~^ ~}" '(0 1.25 -5))
-								     :radius ,(format nil "~a" 1.25) :color "#EF2D5E")
-							  (:a-plane :position ,(format nil "~{~a~^ ~}" '(0 0 -4))
-								    :rotation ,(format nil "~{~a~^ ~}" '(-90 0 0))
-								    :width "4"
-								    :height "4"
-								    :color "#7BC8A4"))))
-				       (new (-Vue (create el "#example"))))))))
-	  (:body
-	   (:div :id "example" (:simple-scene)))))))
-
-
-
-
 (defparameter cont
   (with-output-to-string (sm)
   (with-html-output (sm)
     (htm (:html
-	  (:head (:title "hello")
+	  (:head (:title "hello vue and aframe")
 		 (:script :src "https://aframe.io/releases/0.6.0/aframe.min.js")
 		 (:script :src "https://unpkg.com/vue")
 		 (:script :type "text/javascript"
@@ -75,35 +49,18 @@
 				     (new (-Vue (create el "#example"))))))
 			  (str (format nil "~%//]]>~%"))))
 	  (:body
+	   (:div :id "app"
+		 (str "{{ message }}"))
+	   (:script 
+	    (str (format nil "~%//<![CDATA[~%"))
+	    (str (ps (let ((app (new (-Vue (create :el "#app"
+						   :data (create :message "Hello Vue!")))))))))
+	    (str (format nil "~%//]]>~%")))
+	   #+nil
 	   (:div :id "example" (:simple-scene))))))))
 
 #+nil
-(format t "~a" cont)
-
-
-#+nil
-(defparameter cont
-  (format nil "
-<script type='text/javascript'>
-<!--
-~a
-//-->
-</script>"
-	  (eval `(ps (defun http-success (r) (try
-					      (return (or (and (<= 200 r.status)
-							       (< r.status 300))
-							  (== 304 r.status)))
-					      (:catch (e) (return false))))
-		     (setf window.onload
-			   (lambda ()
-			     (let ((source (new (-event-source "event"))))
-			       (source.add-event-listener
-				"message"
-				(lambda (e)
-					;(console.log e.data)
-				  (let ((s (document.get-element-by-id "feed")))
-				    (setf s.inner-h-t-m-l e.data)))
-				false))))))))
+(format nil "~a" cont)
 
 
 
@@ -113,8 +70,6 @@
     (socket-bind s (make-inet-address "127.0.0.1") 8080)
     (socket-listen s 5)
     s))
-
-
 
 (defun update-swank ()
     (restart-case
@@ -133,7 +88,6 @@
 (let ((stream (simple-select (list *socket-stream* *string-stream*))))
   (print stream)
   (read-line stream))
-
 
 (defun read-get-request (sm)
   (loop for line = (read-line sm)
