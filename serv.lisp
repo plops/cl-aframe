@@ -17,9 +17,11 @@
 
 ;; intro to vue:
 ;; https://vuejs.org/v2/guide/
+;; https://www.youtube.com/watch?v=z6hQqgvGI4Y&t=710s
 
 ;; vue with data server sent data source 
 ;; https://chrisblackwell.me/server-sent-events-using-laravel-vue/
+;; https://www.strehle.de/tim/weblog/archives/2017/06/02/1619
 
 (defpackage :serv
   (:use :cl :sb-bsd-sockets :ps))
@@ -50,15 +52,17 @@
 						 (return (create data null)))
 					  created (lambda ()
 						    ;; this code runs after instance is created
-						    (this.setup-stream))
+						    (this.setup-stream)
+						    (console.log "created ran .. "))
 					  methods (create
-						   :setup-stream (lambda ()
+						    "setupStream" (lambda ()
 								  ;; connect to event stream of the server
 								  ;; if the server sends a message, parse it as json and store in the instances data field
 								  (let ((es (new (-event-source "./event"))))
 								    (es.add-event-listener "message"
 											   (lambda (event)
 											     (setf this.data (-J-S-O-N.parse event.data))
+											     (console.log "event received" event.data)
 											     null)
 											   false)
 								    (es.add-event-listener "error"
