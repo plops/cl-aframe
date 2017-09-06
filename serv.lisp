@@ -37,8 +37,9 @@
       (htm (:html
 	    (:head (:link :rel "icon" :href "data:;base64,iVBORw0KGgo=")
 		   (:title "hello vue and aframe")
-		   (:script :src "https://aframe.io/releases/0.6.0/aframe.min.js")
-		   (:script :src "https://unpkg.com/vue"))
+		   (:script :src "/aframe.min.js" #+nil "https://aframe.io/releases/0.6.0/aframe.min.js")
+		   (:script :src "/vue.js" #+nil "https://unpkg.com/vue")
+		   )
 	    (:body
 	     (:div :id "example" (:simple-scene))
 	     (:script :type "text/javascript"
@@ -57,20 +58,24 @@
 					  methods (create
 						    "setupStream" (lambda ()
 								  ;; connect to event stream of the server
-								  ;; if the server sends a message, parse it as json and store in the instances data field
-								  (let ((es (new (-event-source "./event"))))
-								    (es.add-event-listener "message"
-											   (lambda (event)
-											     (setf this.data (-J-S-O-N.parse event.data))
-											     (console.log "event received" event.data)
-											     null)
+								    ;; if the server sends a message, parse it as json and store in the instances data field
+								    (console.log "setup-stream called ..")
+								    (let ((es (new (-event-source "./event"))))
+								      (es.add-event-listener "message"
+											     (lambda (event)
+											       (console.log "setup-stream.message called ..")
+											       (setf this.data (-J-S-O-N.parse event.data))
+											       (console.log "event received" event.data)
+											       null)
 											   false)
 								    (es.add-event-listener "error"
 											   (lambda (event)
+											     (console.log "setup-stream.error called ..")
 											     (if (== -event-source.-C-L-O-S-E-D event.ready-state)
 												 (console.log "event was closed"))
 											     null)
-											   false))))
+											   false)
+								    null)))
 					  template (who-ps-html
 						    (:a-scene
 						     (:template :v-for "item in data"
@@ -129,24 +134,41 @@
 
 (defparameter *pusher-mb* (sb-concurrency:make-mailbox))
 
+#+nil
+(sb-concurrency:send-message *pusher-mb* "hello")
+
 
 (let ((old-msg ""))
- (defun pusher-kernel (sm)
+  (defun pusher-kernel (sm)
+    (sleep .1)
    (when *pusher-mb*
      (format sm "data: ~a~C~C~C~C"
 	     (let ((msg (sb-concurrency:receive-message *pusher-mb* ;:timeout 1
 							)))
 	       (if msg
-		   (setf old-msg msg)
-		   (with-output-to-string (sm)
-		     (with-html-output (sm)
-		       (:a-sphere :position (format nil "~{~a~^ ~}" '(0 1.25 -5))
-				  :radius (format nil "~a" 1.25) :color "#EF2D5E")
-		       (:a-plane :position (format nil "~{~a~^ ~}" '(0 0 -4))
-				 :rotation (format nil "~{~a~^ ~}" '(-90 0 0))
-				 :width "4"
-				 :height "4"
-				 :color "#7BC8A4")))
+		   (progn
+		     (setf old-msg msg)
+		     (json:encode-json '#(((id . 1)
+					   (position . "1 1 1")
+					   (material . "color: red")
+					   (scale . "1 1 1")
+					   (geometry . "primitive: box"))
+					  ((id . 2)
+					   (position . "2 2 1")
+					   (material . "color: green")
+					   (scale . "2 2 2")
+					   (geometry . "primitive: box")))
+				       sm)
+		     #+nil
+		     (with-output-to-string (sm)
+			     (with-html-output (sm)
+			       (:a-sphere :position (format nil "~{~a~^ ~}" '(0 1.25 -5))
+					  :radius (format nil "~a" 1.25) :color "#EF2D5E")
+			       (:a-plane :position (format nil "~{~a~^ ~}" '(0 0 -4))
+					 :rotation (format nil "~{~a~^ ~}" '(-90 0 0))
+					 :width "4"
+					 :height "4"
+					 :color "#7BC8A4"))))
 		   #+nil (format nil "<b>no update</b>~a" old-msg)))
 	     #\return #\linefeed #\return #\linefeed))))
 
@@ -157,6 +179,25 @@
        (pusher-kernel sm)
        )
   (close sm))
+
+(defparameter *vue.js*
+ (with-open-file (s "vue.js")
+   (let ((a (make-string (file-length s))))
+     (read-sequence a s)
+     a)))
+
+
+(defparameter *backend.js*
+ (with-open-file (s "backend.js")
+   (let ((a (make-string (file-length s))))
+     (read-sequence a s)
+     a)))
+
+(defparameter *aframe.min.js*
+ (with-open-file (s "aframe.min.js")
+   (let ((a (make-string (file-length s))))
+     (read-sequence a s)
+     a)))
 
 (defun handle-connection (s)
   (let ((sm (socket-make-stream (socket-accept s)
@@ -181,7 +222,19 @@
 			  (:body
 			   )
 			  (str cont))))
-	     (close sm)) 
+	     (close sm))
+	    ((string= r "/vue.js") 
+	     (format sm "HTTP/1.1 200 OK~%Content-type: text/html~%~%")
+	     (write-sequence *vue.js* sm)
+	     (close sm))
+	    ((string= r "/backend.js") 
+	     (format sm "HTTP/1.1 200 OK~%Content-type: text/html~%~%")
+	     (write-sequence *backend.js* sm)
+	     (close sm))
+	    ((string= r "/aframe.min.js") 
+	     (format sm "HTTP/1.1 200 OK~%Content-type: text/html~%~%")
+	     (write-sequence *aframe.min.js* sm)
+	     (close sm))
 	    #+nil ((string= r "/test.txt")
 		   (format sm "HTTP/1.1 200 OK~%Content-type: text/html~%~%")
 		   (format sm "<b>~a</b>" (get-internal-real-time))
