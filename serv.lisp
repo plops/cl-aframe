@@ -30,7 +30,6 @@
 
 (declaim (optimize (speed 0) (safety 3) (debug 3)))
 
-
 (defparameter cont
   (with-output-to-string (sm)
     (with-html-output (sm)
@@ -41,16 +40,70 @@
 		   (:script :src "/vue.js" #+nil "https://unpkg.com/vue")
 		   )
 	    (:body
-	     (:div :id "example" (:simple-scene))
+	     
+	     (:div :id "app"
+		   (:my-ul
+		    (:li :v-for "item in data"
+			 "{{ item.message }}")))
+	     #+nil
+	     (:ul :id "example" (:simplescene))
+	     
 	     (:script :type "text/javascript"
 		      (str (format nil "~%//<![CDATA[~%"))
 		      (str (ps (progn
-				 
-				 ((@ -Vue component) "simple-scene"
+				 #+nil (new (-Vue (create el "#simple-scene"
+						    data (create data (array (create message "foo")
+									      (create message "bar"))))))
+				 ((@ -Vue component) "my-ul"
 				  (create data (lambda ()
 						 ;; data must be a function
 						 ;; https://vuejs.org/v2/guide/components.html
-						 (return (create data null)))
+						 (return (create data (array (create message "foo")
+									     (create message "bar"))
+								 )))
+
+					  ;template (who-ps-html (:ul ))
+					 
+					  #+nil template #+nil  (who-ps-html
+						     #+kil
+						     (:p "{{ data.length }}")
+						     #+nil (:my-item :v-for "item :in data"
+							       :key "item.cnt"
+							       
+							       :|v-bind:item| "item"
+							       "{{ item }} ")
+						    (:li :v-for "(it) :of data"
+							       "{{ it }}"))))
+				 
+				 #+nil ((@ -Vue component) "simplescene"
+				  (create data (lambda ()
+						 ;; data must be a function
+						 ;; https://vuejs.org/v2/guide/components.html
+						 (return (create data
+								 (array
+								  (create id 1
+									  position "1 1 1"
+									  material "color: red"
+									  scale "1 1 1"
+									  geometry "primitive: box")
+								  (create id 2
+									  position "2 2 1"
+									  material "color: green"
+									  scale "2 2 2"
+									  geometry "primitive: box"))
+								 #+nil (-J-S-O-N.parse (lisp (with-output-to-string (sm)
+											 (json:encode-json '#(((id . 1)
+													       (position . "1 1 1")
+													       (material . "color: red")
+													       (scale . "1 1 1")
+													       (geometry . "primitive: box"))
+													      ((id . 2)
+													       (position . "2 2 1")
+													       (material . "color: green")
+													       (scale . "2 2 2")
+													       (geometry . "primitive: box")))
+													   sm)
+											 ))))))
 					  created (lambda ()
 						    ;; this code runs after instance is created
 						    (this.setup-stream)
@@ -64,7 +117,7 @@
 								      (es.add-event-listener "message"
 											     (lambda (event)
 											       (console.log "setup-stream.message called ..")
-											       (setf this.data (-J-S-O-N.parse event.data))
+											       #+nil (setf this.items (-J-S-O-N.parse event.data))
 											       (console.log "event received" event.data)
 											       null)
 											   false)
@@ -77,17 +130,24 @@
 											   false)
 								    null)))
 					  template (who-ps-html
-						    (:a-scene
-						     (:template :v-for "item in data"
-								"v-bind:id" "item.id")
-						     (:a-sphere :position "0 1.25 -5" #+nil (lisp (format nil "~{~a~^ ~}" '(0 1.25 -5)))
-								:radius "1.25" #+nil (lisp (format nil "~a" 1.25)) :color "#0F2D5E")
-						     (:a-plane :position "0 0 -4" #+nil (lisp (format nil "~{~a~^ ~}" '(0 0 -4)))
-							       :rotation "-90 0 0"  #+nil (lisp (format nil "~{~a~^ ~}" '(-90 0 0)))
-							       :width "4"
-							       :height "4"
-							       :color "#0BC8A4")))))
-				 (new (-Vue (create el "#example"))))))
+						    ;; :a-scene
+						    (:template :v-for "(item,idx) in items"
+							       (:a-entity ;:|v-bind:id| "item.id"
+									  :|v-bind:geometry| "item.geometry"
+									  :|v-bind:position| "item.position"
+									  :|v-bind:scale| "item.scale"
+									  :|v-bind:material| "item.material"))
+						    #+nil
+						    (:a-sphere :position "0 1.25 -5" #+nil (lisp (format nil "~{~a~^ ~}" '(0 1.25 -5)))
+							       :radius "1.25" #+nil (lisp (format nil "~a" 1.25)) :color "#0F2D5E")
+						    #+nil
+						    (:a-plane :position "0 0 -4" #+nil (lisp (format nil "~{~a~^ ~}" '(0 0 -4)))
+							      :rotation "-90 0 0"  #+nil (lisp (format nil "~{~a~^ ~}" '(-90 0 0)))
+							      :width "4"
+							      :height "4"
+							      :color "#0BC8A4"))))
+				 (new (-Vue (create el "#app")))
+				 )))
 		      (str (format nil "~%//]]>~%")))))))))
 
 #+nil
@@ -143,7 +203,7 @@
     (sleep .1)
    (when *pusher-mb*
      (format sm "data: ~a~C~C~C~C"
-	     (let ((msg (sb-concurrency:receive-message *pusher-mb* ;:timeout 1
+	     (let ((msg (sb-concurrency:receive-message *pusher-mb* :timeout 10
 							)))
 	       (if msg
 		   (progn
@@ -169,9 +229,20 @@
 					 :width "4"
 					 :height "4"
 					 :color "#7BC8A4"))))
+		   (json:encode-json '#(((id . 1)
+					   (position . "1 1 1")
+					   (material . "color: red")
+					   (scale . "1 1 1")
+					 (geometry . "primitive: box"))
+					)
+				     sm)
 		   #+nil (format nil "<b>no update</b>~a" old-msg)))
 	     #\return #\linefeed #\return #\linefeed))))
-
+#+nil
+(with-output-to-string (sm)
+  (with-html-output (sm)
+    (:form
+     :|v-on:submit.prevent| "run")))
 
 (defun pusher (sm)
   (format sm "HTTP/1.1 200 OK~%Content-type: text/event-stream~%~%")
@@ -239,20 +310,7 @@
 		   (format sm "HTTP/1.1 200 OK~%Content-type: text/html~%~%")
 		   (format sm "<b>~a</b>" (get-internal-real-time))
 		   (close sm))
-	    #+nil ((string= r "/data.json")
-	     (format sm "HTTP/1.1 200 OK~%Content-type: application/json~%~%")
-	     (json:encode-json '#(((id . 1)
-				   (position . "1 1 1")
-				   (material . "color: red")
-				   (scale . "1 1 1")
-				   (geometry . "primitive: box"))
-				  ((id . 2)
-				   (position . "2 2 1")
-				   (material . "color: green")
-				   (scale . "2 2 2")
-				   (geometry . "primitive: box")))
-			       sm)
-	     (close sm))
+	
 	    ((string= r "/event")
 	     (sb-thread:make-thread 
 	      #'(lambda ()
